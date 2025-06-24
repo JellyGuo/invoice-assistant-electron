@@ -1,9 +1,11 @@
 const { execSync } = require('child_process');
-const fs = require('fs');
+const fs = require('fs-extra');  
 const path = require('path');
 
 module.exports = {
-  packagerConfig: {},
+  packagerConfig: {
+    icon: path.resolve(__dirname, 'assets/icons/icon'),
+  },
   makers: [
     {
       name: '@electron-forge/maker-zip',
@@ -15,6 +17,22 @@ module.exports = {
         name: 'invoice_assistant',
         format: 'ULFO',
         overwrite: true,
+        // background: path.resolve(__dirname, 'assets/icon2.png'), // ✅ 背景图路径
+        // iconSize: 100,
+        // contents: [
+        //   {
+        //     x: 130,
+        //     y: 220,
+        //     type: 'file',
+        //     path: path.resolve(__dirname, 'out/invoice-assistant-electron-darwin-arm64/invoice-assistant-electron.app') 
+        //   },
+        //   {
+        //     x: 410,
+        //     y: 220,
+        //     type: 'link',
+        //     path: '/Applications'
+        //   }
+        // ]
       },
     },
   ],
@@ -25,7 +43,7 @@ module.exports = {
           const artifacts = makeResult.artifacts || [];
 
           for (const file of artifacts) {
-            // 清除 quarantine
+            // ✅ 清除 .app 包的 quarantine 属性
             if (file.endsWith('.app')) {
               try {
                 execSync(`xattr -cr "${file}"`);
@@ -35,21 +53,29 @@ module.exports = {
               }
             }
 
-            // 拷贝 start.sh、stop.sh、README.txt 到生成目录（与 .dmg/.zip 同级）
+            // ✅ 拷贝 start.sh、stop.sh、README.txt、StartApp.app 到输出目录
             const outputDir = path.dirname(file);
-            const assetFiles = ['start.sh', 'stop.sh', 'README.txt'];
-            const assetSrcDir = path.resolve(__dirname, 'assets'); // 你放脚本的目录
+            const assetFiles = ['README.txt'];
+            const assetSrcDir = path.resolve(__dirname, 'assets');
 
-            assetFiles.forEach(fileName => {
+            for (const fileName of assetFiles) {
               const src = path.join(assetSrcDir, fileName);
               const dest = path.join(outputDir, fileName);
 
               if (fs.existsSync(src)) {
-                fs.copyFileSync(src, dest);
-                fs.chmodSync(dest, 0o755);
-                console.log(`✅ Copied and set permission: ${fileName}`);
+                try {
+                  fs.copySync(src, dest, { overwrite: true });  // ✅ 自动递归复制目录和文件
+                  if (fileName.endsWith('.sh') || fileName.endsWith('.command') || fileName.endsWith('.app')) {
+                    fs.chmodSync(dest, 0o755);  // ✅ 设置执行权限
+                  }
+                  console.log(`✅ Copied asset: ${fileName}`);
+                } catch (err) {
+                  console.error(`❌ Failed to copy ${fileName}: ${err.message}`);
+                }
+              } else {
+                console.warn(`⚠️ Asset not found: ${fileName}`);
               }
-            });
+            }
           }
         }
       }

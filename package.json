@@ -23,7 +23,8 @@
     "@electron-forge/plugin-fuses": "^7.8.1",
     "@electron-forge/publisher-github": "^7.8.1",
     "@electron/fuses": "^1.8.0",
-    "electron": "^36.4.0"
+    "electron": "^36.4.0",
+    "fs-extra": "^11.3.0"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1",
